@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MKVote - Mockup</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; display: flex; justify-content: center; padding: 20px; }
+        
+        .phone { width: 375px; height: 812px; border: 8px solid #333; border-radius: 40px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); display: flex; flex-direction: column; background: white; }
+        
+        .phone-header { background: #0066cc; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        
+        .phone-content { flex: 1; overflow-y: auto; display: none; padding: 24px 16px; }
+        .phone-content.active { display: block; }
+        
+        .phone-content h2 { font-size: 20px; margin-bottom: 16px; color: #1a1a1a; }
+        .phone-content p { font-size: 14px; color: #666; margin-bottom: 12px; }
+        
+        .qr-box { width: 200px; height: 200px; background: #f0f0f0; border: 2px solid #0066cc; border-radius: 8px; margin: 20px auto; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; }
+        
+        .radio-group, .checkbox-group { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+        
+        .option { padding: 14px; border: 2px solid #ddd; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; }
+        .option:hover { border-color: #0066cc; }
+        .option.selected { border-color: #0066cc; background: #f0f7ff; }
+        
+        .radio, .checkbox { width: 18px; height: 18px; border: 2px solid #ddd; border-radius: 50%; flex-shrink: 0; transition: all 0.2s; }
+        .checkbox { border-radius: 4px; }
+        .option.selected .radio, .option.selected .checkbox { background: #0066cc; border-color: #0066cc; }
+        
+        .timer { position: absolute; top: 16px; right: 16px; text-align: right; }
+        .timer-val { font-size: 24px; font-weight: bold; color: #0066cc; }
+        .timer-label { font-size: 11px; color: #999; }
+        
+        button { padding: 12px 16px; background: #0066cc; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; width: 100%; margin-top: 16px; }
+        button:hover { background: #0052a3; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .result-bar { display: flex; gap: 12px; align-items: center; margin: 12px 0; }
+        .result-bar span:first-child { min-width: 120px; font-weight: 500; }
+        .result-bar .bar { flex: 1; height: 12px; background: #e0e0e0; border-radius: 6px; overflow: hidden; }
+        .result-bar .fill { height: 100%; background: #0066cc; }
+        .result-bar span:last-child { min-width: 50px; text-align: right; font-size: 14px; color: #666; }
+        
+        .winner { color: #00aa00; font-weight: bold; }
+        
+        .btn-secondary { background: #ddd; color: #333; margin-top: 8px; }
+        .btn-secondary:hover { background: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="phone">
+    <div class="phone-header">
+        <span>MKVote</span>
+        <span style="font-size: 12px;">Quartier Carioca</span>
+    </div>
+
+    <!-- Tela 1: Login QR -->
+    <div class="phone-content active" id="screen-login">
+        <div style="text-align: center; padding: 20px 0;">
+            <div class="qr-box">[QR Code]</div>
+            <h2>Leia o QR Code</h2>
+            <p>Aponte a câmera do seu celular para o código acima para fazer login</p>
+            <button onclick="showScreen('screen-sala-espera')">→ Continuar</button>
+        </div>
+    </div>
+
+    <!-- Tela 2: Sala de Espera -->
+    <div class="phone-content" id="screen-sala-espera">
+        <div style="text-align: center; padding: 40px 0;">
+            <div style="width: 80px; height: 80px; background: #0066cc; border-radius: 8px; margin: 0 auto 20px;"></div>
+            <h2>Assembleia em Andamento</h2>
+            <p>Você está na fila. Aguarde a abertura da primeira votação.</p>
+            <button onclick="startVotacao1()">→ Iniciar Votação</button>
+        </div>
+    </div>
+
+    <!-- Tela 3: Votação Síndico -->
+    <div class="phone-content" id="screen-votacao1">
+        <div style="position: relative;">
+            <h2>Síndico</h2>
+            <div class="timer">
+                <div class="timer-val" id="timer1">2:00</div>
+                <div class="timer-label">Tempo restante</div>
+            </div>
+        </div>
+        <div class="radio-group" id="radio1"></div>
+        <button onclick="submitVoto1()" id="btn-voto1" disabled>Confirmar Voto</button>
+    </div>
+
+    <!-- Tela 4: Resultado Votação 1 -->
+    <div class="phone-content" id="screen-resultado1">
+        <h2>Resultado: Síndico</h2>
+        <div id="resultado1-content"></div>
+        <button onclick="startVotacao2()" class="btn-secondary">→ Próxima Votação</button>
+    </div>
+
+    <!-- Tela 5: Votação Conselho -->
+    <div class="phone-content" id="screen-votacao2">
+        <div style="position: relative;">
+            <h2>Conselho do Bloco 1</h2>
+            <div class="timer">
+                <div class="timer-val" id="timer2">2:00</div>
+                <div class="timer-label">Tempo restante</div>
+            </div>
+        </div>
+        <p style="font-size: 12px;">Escolha até 3 candidatos</p>
+        <div class="checkbox-group" id="checkbox2"></div>
+        <button onclick="submitVoto2()" id="btn-voto2">Confirmar Voto (0/3)</button>
+    </div>
+
+    <!-- Tela 6: Resultado Votação 2 -->
+    <div class="phone-content" id="screen-resultado2">
+        <h2>Resultado: Conselho</h2>
+        <div id="resultado2-content"></div>
+        <button onclick="showScreen('screen-login')" class="btn-secondary">← Voltar ao Início</button>
+    </div>
+</div>
+
+<script>
+const candidatos1 = ['João Silva', 'Maria Santos', 'Carlos Oliveira', 'Ana Costa'];
+const resultados1 = { 'João Silva': 42, 'Maria Santos': 28, 'Carlos Oliveira': 18, 'Ana Costa': 12 };
+
+const candidatos2 = ['Pedro', 'Ricardo', 'Fernanda', 'Bruno', 'Lucas', 'Gisele', 'Marcelo'];
+const votos2 = { 'Pedro': 35, 'Ricardo': 32, 'Fernanda': 28, 'Bruno': 18, 'Lucas': 15, 'Gisele': 12, 'Marcelo': 8 };
+
+let voto1Selected = null;
+let voto2Selected = [];
+let timer1Interval, timer2Interval;
+
+function showScreen(screenId) {
+    document.querySelectorAll('.phone-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+}
+
+function startVotacao1() {
+    showScreen('screen-votacao1');
+    voto1Selected = null;
+    renderRadioGroup();
+    let tempo = 120;
+    document.getElementById('timer1').textContent = '2:00';
+    clearInterval(timer1Interval);
+    timer1Interval = setInterval(() => {
+        tempo--;
+        const min = Math.floor(tempo / 60);
+        const sec = String(tempo % 60).padStart(2, '0');
+        document.getElementById('timer1').textContent = `${min}:${sec}`;
+    }, 1000);
+}
+
+function renderRadioGroup() {
+    const container = document.getElementById('radio1');
+    container.innerHTML = '';
+    candidatos1.forEach(cand => {
+        const div = document.createElement('div');
+        div.className = 'option';
+        div.innerHTML = `<div class="radio"></div><span>${cand}</span>`;
+        div.onclick = () => selectVoto1(cand, div);
+        container.appendChild(div);
+    });
+}
+
+function selectVoto1(cand, el) {
+    voto1Selected = cand;
+    document.querySelectorAll('#radio1 .option').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('btn-voto1').disabled = false;
+}
+
+function submitVoto1() {
+    clearInterval(timer1Interval);
+    renderResultado1();
+    showScreen('screen-resultado1');
+}
+
+function renderResultado1() {
+    const total = Object.values(resultados1).reduce((a, b) => a + b, 0);
+    const sorted = Object.entries(resultados1).sort((a, b) => b[1] - a[1]);
+    
+    const html = sorted.map(([cand, votos], idx) => {
+        const pct = Math.round((votos / total) * 100);
+        const isWinner = idx === 0;
+        return `
+            <div class="result-bar">
+                <span ${isWinner ? 'class="winner"' : ''}>${cand}</span>
+                <div class="bar"><div class="fill" style="width: ${pct}%; background: ${isWinner ? '#00aa00' : '#0066cc'};"></div></div>
+                <span>${pct}%</span>
+            </div>
+        `;
+    }).join('');
+    document.getElementById('resultado1-content').innerHTML = html;
+}
+
+function startVotacao2() {
+    showScreen('screen-votacao2');
+    voto2Selected = [];
+    renderCheckboxGroup();
+    let tempo = 120;
+    document.getElementById('timer2').textContent = '2:00';
+    clearInterval(timer2Interval);
+    timer2Interval = setInterval(() => {
+        tempo--;
+        const min = Math.floor(tempo / 60);
+        const sec = String(tempo % 60).padStart(2, '0');
+        document.getElementById('timer2').textContent = `${min}:${sec}`;
+    }, 1000);
+}
+
+function renderCheckboxGroup() {
+    const container = document.getElementById('checkbox2');
+    container.innerHTML = '';
+    candidatos2.forEach(cand => {
+        const div = document.createElement('div');
+        div.className = 'option';
+        div.innerHTML = `<div class="checkbox"></div><span>${cand}</span>`;
+        div.onclick = () => selectVoto2(cand, div);
+        container.appendChild(div);
+    });
+}
+
+function selectVoto2(cand, el) {
+    if (voto2Selected.includes(cand)) {
+        voto2Selected = voto2Selected.filter(c => c !== cand);
+        el.classList.remove('selected');
+    } else if (voto2Selected.length < 3) {
+        voto2Selected.push(cand);
+        el.classList.add('selected');
+    }
+    document.getElementById('btn-voto2').textContent = `Confirmar Voto (${voto2Selected.length}/3)`;
+}
+
+function submitVoto2() {
+    clearInterval(timer2Interval);
+    renderResultado2();
+    showScreen('screen-resultado2');
+}
+
+function renderResultado2() {
+    const total = Object.values(votos2).reduce((a, b) => a + b, 0);
+    const sorted = Object.entries(votos2).sort((a, b) => b[1] - a[1]);
+    
+    const html = sorted.map(([cand, votos]) => {
+        const pct = Math.round((votos / total) * 100);
+        return `
+            <div class="result-bar">
+                <span>${cand}</span>
+                <div class="bar"><div class="fill" style="width: ${pct}%;"></div></div>
+                <span>${pct}%</span>
+            </div>
+        `;
+    }).join('');
+    document.getElementById('resultado2-content').innerHTML = html;
+}
+</script>
+
+</body>
+</html>
